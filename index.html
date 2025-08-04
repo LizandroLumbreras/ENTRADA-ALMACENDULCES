@@ -106,36 +106,55 @@
 
     let productos = [];
 
-    function agregarProducto() {
-      const codigo = document.getElementById('codigoInput').value.trim();
-      const cantidad = parseFloat(document.getElementById('cantidadInput').value.trim());
-      const sucursal = document.getElementById('sucursalInput').value.trim();
+    async function agregarProducto() {
+  const codigo = document.getElementById('codigoInput').value.trim();
+  const cantidad = parseFloat(document.getElementById('cantidadInput').value.trim());
+  const sucursal = document.getElementById('sucursalInput').value.trim();
 
-      if (!codigo || !cantidad || !sucursal) {
-        alert("Completa todos los campos");
-        return;
-      }
+  if (!codigo || !cantidad || !sucursal) {
+    alert("Completa todos los campos");
+    return;
+  }
 
-      productos.push({ codigo, cantidad, sucursal });
-      mostrarProductos();
-      document.getElementById('codigoInput').value = '';
-      document.getElementById('cantidadInput').value = '';
+  try {
+    const query = await db.collection("productos").where("Codigo Barra", "==", codigo).get();
+    if (query.empty) {
+      alert("Producto no encontrado en la base de datos.");
+      return;
     }
 
-    function mostrarProductos() {
-      const contenedor = document.getElementById('productosAgregados');
-      contenedor.innerHTML = '';
-      productos.forEach((prod, index) => {
-        contenedor.innerHTML += `
-          <div class="producto">
-            <strong>Código:</strong> ${prod.codigo} | 
-            <strong>Cantidad:</strong> ${prod.cantidad} | 
-            <strong>Sucursal:</strong> ${prod.sucursal}
-            <button onclick="eliminarProducto(${index})">❌</button>
-          </div>
-        `;
-      });
-    }
+    const producto = query.docs[0].data();
+
+    productos.push({
+      codigo: codigo,
+      cantidad: cantidad,
+      sucursal: sucursal,
+      descripcion: producto.Descripcion || "Sin descripción",
+      unidad: producto.Unidad || ""
+    });
+
+    mostrarProductos();
+    document.getElementById('codigoInput').value = '';
+    document.getElementById('cantidadInput').value = '';
+  } catch (error) {
+    console.error("Error al buscar producto:", error);
+    alert("Error al buscar el producto");
+  }
+}
+   function mostrarProductos() {
+  const contenedor = document.getElementById('productosAgregados');
+  contenedor.innerHTML = '';
+  productos.forEach((prod, index) => {
+    contenedor.innerHTML += `
+      <div class="producto">
+        <strong>${prod.descripcion}</strong><br>
+        Código: ${prod.codigo} | Cantidad: ${prod.cantidad} ${prod.unidad}<br>
+        Sucursal: ${prod.sucursal}
+        <button onclick="eliminarProducto(${index})">❌</button>
+      </div>
+    `;
+  });
+}
 
     function eliminarProducto(index) {
       productos.splice(index, 1);
