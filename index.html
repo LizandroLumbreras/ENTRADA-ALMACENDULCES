@@ -81,7 +81,7 @@
   <h1>Entrada - Almacén Dulces</h1>
 
   <div class="formulario">
-    <input type="text" id="codigoInput" placeholder="Código del producto" />
+    <input type="text" id="codigoInput" inputmode="numeric" autocomplete="off" placeholder="Código del producto" />
     <input type="number" id="cantidadInput" placeholder="Cantidad" />
     <input type="text" id="sucursalInput" placeholder="Sucursal" />
     <button onclick="agregarProducto()">Agregar producto</button>
@@ -106,7 +106,7 @@
 
     let productos = [];
 
-    async function agregarProducto() {
+async function agregarProducto() {
   const codigo = document.getElementById('codigoInput').value.trim();
   const cantidad = parseFloat(document.getElementById('cantidadInput').value.trim());
   const sucursal = document.getElementById('sucursalInput').value.trim();
@@ -116,8 +116,11 @@
     return;
   }
 
+  // Asegura que el código tenga 13 dígitos con ceros a la izquierda
+  const codigoTexto = codigo.padStart(13, '0');
+
   try {
-    const query = await db.collection("productos").where("Codigo Barra", "==", codigo).get();
+    const query = await db.collection("productos").where("Codigo Barra", "==", codigoTexto).get();
     if (query.empty) {
       alert("Producto no encontrado en la base de datos.");
       return;
@@ -126,11 +129,11 @@
     const producto = query.docs[0].data();
 
     productos.push({
-      codigo: codigo,
+      codigo: codigoTexto,
       cantidad: cantidad,
       sucursal: sucursal,
-      descripcion: producto.Descripcion || "Sin descripción",
-      unidad: producto.Unidad || ""
+      descripcion: producto.Concepto || producto.Descripcion || "Sin descripción",
+      unidad: producto["Unidad de Medida Sat"] || producto.Unidad || ""
     });
 
     mostrarProductos();
@@ -170,30 +173,32 @@
       return actual;
     }
 
-    async function guardarEntrada() {
-      if (productos.length === 0) {
-        alert("No hay productos agregados");
-        return;
-      }
+async function guardarEntrada() {
+  if (productos.length === 0) {
+    alert("No hay productos agregados");
+    return;
+  }
 
-      const folio = await obtenerFolio();
-      const fecha = new Date().toISOString();
+  const folio = await obtenerFolio();
+  const fecha = new Date().toISOString();
 
-      const promesas = productos.map((prod) => {
-        return db.collection("almacenes").doc("Almacen_Dulces").collection("entradas").add({
-          codigo: prod.codigo,
-          cantidad: prod.cantidad,
-          sucursal: prod.sucursal,
-          fecha: fecha,
-          folio: folio
-        });
-      });
+  const promesas = productos.map((prod) => {
+    return db.collection("almacenes").doc("Almacen_Dulces").collection("entradas").add({
+      codigo: prod.codigo,
+      cantidad: prod.cantidad,
+      sucursal: prod.sucursal,
+      descripcion: prod.descripcion,
+      unidad: prod.unidad,
+      fecha: fecha,
+      folio: folio
+    });
+  });
 
-      await Promise.all(promesas);
-      alert(`Entrada guardada con folio ${folio}`);
-      productos = [];
-      mostrarProductos();
-    }
+  await Promise.all(promesas);
+  alert(`Entrada guardada con folio ${folio}`);
+  productos = [];
+  mostrarProductos();
+}
   </script>
 </body>
 </html>
