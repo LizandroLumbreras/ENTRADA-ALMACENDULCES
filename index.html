@@ -128,14 +128,19 @@ async function agregarProducto() {
 
     const producto = query.docs[0].data();
 
-    productos.push({
-      codigo: codigoTexto,
-      cantidad: cantidad,
-      sucursal: sucursal,
-      descripcion: producto.Concepto || producto.Descripcion || "Sin descripción",
-      unidad: producto["Unidad de Medida Sat"] || producto.Unidad || ""
-    });
+  const indexExistente = productos.findIndex(p => p.codigo === codigoTexto && p.sucursal === sucursal);
 
+if (indexExistente !== -1) {
+  productos[indexExistente].cantidad += cantidad;
+} else {
+  productos.push({
+    codigo: codigoTexto,
+    cantidad: cantidad,
+    sucursal: sucursal,
+    descripcion: producto.Concepto || producto.Descripcion || "Sin descripción",
+    unidad: producto["Unidad de Medida Sat"] || producto.Unidad || ""
+  });
+}
     mostrarProductos();
     document.getElementById('codigoInput').value = '';
     document.getElementById('cantidadInput').value = '';
